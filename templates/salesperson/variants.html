@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Car Variants{% endblock %}
+{% block page_title %}Car Variants{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <h2 class="card-title">Available Variants</h2>
+  </div>
+  {% if variants %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Model Name</th>
+        <th>Variant Name</th>
+        <th>Engine Type</th>
+        <th>Fuel Type</th>
+        <th>Transmission</th>
+        <th>Cost</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for v in variants %}
+      <tr>
+        <td>{{ v.Model_Name }}</td>
+        <td>{{ v.Variant_Name }}</td>
+        <td>{{ v.Engine_Type }}</td>
+        <td><span class="badge badge-blue">{{ v.Fuel_Type }}</span></td>
+        <td>{{ v.Transmission }}</td>
+        <td><strong>${{ "{:,.0f}".format(v.Cost) }}</strong></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p class="empty-state">No variants available.</p>
+  {% endif %}
+</div>
+{% endblock %}

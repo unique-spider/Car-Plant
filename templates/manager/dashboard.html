@@ -1,0 +1,350 @@
+{% extends "base.html" %}
+{% block title %}Manager Dashboard{% endblock %}
+{% block page_title %}Global Production Dashboard{% endblock %}
+
+{% block content %}
+<style>
+  .tab-btn.active {
+    background-color: #eff6ff;
+    color: #1d4ed8;
+    border-bottom: 2px solid #1d4ed8;
+    border-radius: 6px 6px 0 0;
+  }
+  .progress-bar-bg {
+    background-color: #e5e7eb;
+    border-radius: 999px;
+    height: 8px;
+    width: 100%;
+    margin-top: 8px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    background-color: #3b82f6;
+    height: 100%;
+    transition: width 0.3s ease;
+  }
+</style>
+
+<div class="tabs" style="margin-bottom: 24px; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px;">
+  <button class="btn btn-ghost tab-btn active" onclick="showTab('overview')">Overview</button>
+  <button class="btn btn-ghost tab-btn" onclick="showTab('all-orders')">All Orders</button>
+  <button class="btn btn-ghost tab-btn" onclick="showTab('production')">Production Status</button>
+  <button class="btn btn-ghost tab-btn" onclick="showTab('completed')">Completed Cars</button>
+  <button class="btn btn-ghost tab-btn" onclick="showTab('complaints')">Complaints</button>
+</div>
+
+<!-- TAB 1: OVERVIEW -->
+<div id="overview" class="tab-content">
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="stat-icon" style="background: #eff6ff; color: #3b82f6;">📋</div>
+      <div class="stat-body">
+        <div class="stat-value">{{ total_orders }}</div>
+        <div class="stat-label">Total Orders</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background: #fff7ed; color: #f59e0b;">🔨</div>
+      <div class="stat-body">
+        <div class="stat-value">{{ in_prod }}</div>
+        <div class="stat-label">Cars in Production</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background: #ecfdf5; color: #10b981;">✅</div>
+      <div class="stat-body">
+        <div class="stat-value">{{ completed }}</div>
+        <div class="stat-label">Completed Cars</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background: #f3e8ff; color: #a855f7;">🏢</div>
+      <div class="stat-body">
+        <div class="stat-value">{{ total_dealerships }}</div>
+        <div class="stat-label">Total Dealerships</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 24px; margin-top: 24px;">
+    <div class="card" style="flex: 2;">
+      <div class="card-header"><h2 class="card-title">Orders per Dealership</h2></div>
+      <div style="padding: 24px;"><canvas id="dealershipChart"></canvas></div>
+    </div>
+    <div class="card" style="flex: 1;">
+      <div class="card-header"><h2 class="card-title">Order Status Distribution</h2></div>
+      <div style="padding: 24px;"><canvas id="statusChart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 2: ALL ORDERS -->
+<div id="all-orders" class="tab-content" style="display: none;">
+  <div class="card">
+    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+      <h2 class="card-title">Master Order Directory</h2>
+      <form method="GET" action="{{ url_for('manager_dashboard') }}" style="display: flex; gap: 12px;">
+        <input type="hidden" name="tab" value="all-orders">
+        <select name="dealership_id" class="form-group" style="margin: 0; padding: 6px; width: 200px;">
+          <option value="">All Dealerships</option>
+          {% for d in dealerships %}
+            <option value="{{ d.Dealership_ID }}" {% if current_dealership|string == d.Dealership_ID|string %}selected{% endif %}>{{ d.Name }}</option>
+          {% endfor %}
+        </select>
+        <select name="status" class="form-group" style="margin: 0; padding: 6px; width: 150px;">
+          <option value="">All Statuses</option>
+          <option value="pending" {% if current_status == 'pending' %}selected{% endif %}>Pending</option>
+          <option value="accepted" {% if current_status == 'accepted' %}selected{% endif %}>Accepted</option>
+          <option value="in_production" {% if current_status == 'in_production' %}selected{% endif %}>In Production</option>
+          <option value="completed" {% if current_status == 'completed' %}selected{% endif %}>Completed</option>
+          <option value="delivered" {% if current_status == 'delivered' %}selected{% endif %}>Delivered</option>
+        </select>
+        <button type="submit" class="btn btn-ghost" style="padding: 6px 12px;">Filter</button>
+      </form>
+    </div>
+    
+    {% if all_orders %}
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Order ID</th>
+          <th>Customer</th>
+          <th>Dealership</th>
+          <th>Variant</th>
+          <th>Order Date</th>
+          <th>Status</th>
+          <th style="text-align: right;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for o in all_orders %}
+        <tr>
+          <td>#{{ o.Order_ID }}</td>
+          <td>{{ o.customer_name }}</td>
+          <td>{{ o.dealership_name }}</td>
+          <td>{{ o.Model_Name }} — {{ o.Variant_Name }}</td>
+          <td>{{ o.Order_Date }}</td>
+          <td><span class="badge badge-{{ o.Status }}">{{ o.Status.replace('_', ' ').title() }}</span></td>
+          <td style="text-align: right;">
+            <div style="display: flex; gap: 8px; justify-content: flex-end;">
+              {% if o.Status == 'pending' %}
+              <form method="POST" action="{{ url_for('manager_accept_order') }}" style="display: inline;">
+                <input type="hidden" name="order_id" value="{{ o.Order_ID }}">
+                <button type="submit" class="btn btn-primary btn-sm">Accept</button>
+              </form>
+              {% endif %}
+              <a href="{{ url_for('manager_edit_order', order_id=o.Order_ID) }}" class="btn btn-outline-secondary btn-sm">
+                {% if o.Status == 'delivered' %}✏️{% else %}Edit{% endif %}
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+      <p class="empty-state">No orders found matching your criteria.</p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- TAB 3: PRODUCTION STATUS -->
+<div id="production" class="tab-content" style="display: none;">
+  <div class="card">
+    <div class="card-header"><h2 class="card-title">Active Production Pipeline</h2></div>
+    {% if production_cars %}
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Car ID</th>
+          <th>Order ID</th>
+          <th>Model & Variant</th>
+          <th>Start Date</th>
+          <th>Current Section</th>
+          <th style="width: 200px;">Overall Progress</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in production_cars %}
+        <tr>
+          <td>#{{ c.Car_ID }}</td>
+          <td>#{{ c.Order_ID }}</td>
+          <td>{{ c.Model_Name }} — {{ c.Variant_Name }}</td>
+          <td>{{ c.Production_Start_Date }}</td>
+          <td><b>{{ c.Current_Section }}</b></td>
+          <td>
+            <div style="font-size: 0.875rem; font-weight: 500;">{{ c.sections_completed }} / 6 sections</div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" style="width: {{ (c.sections_completed / 6.0) * 100 }}%;"></div>
+            </div>
+            <form method="POST" action="{{ url_for('qc_raise') }}" style="margin-top: 12px; display: flex; gap: 8px;">
+               <input type="hidden" name="car_id" value="{{ c.Car_ID }}">
+               <input type="text" name="description" placeholder="Report QC issue..." class="form-control" style="padding: 6px 10px; font-size: 12px; flex: 1;" required>
+               <button type="submit" class="btn btn-ghost btn-sm" style="padding: 6px 10px; color: #dc2626; border-color: #fca5a5;" title="Flag an issue for Quality Control">Flag</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+      <p class="empty-state">No cars currently in active production.</p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- TAB 4: COMPLETED CARS -->
+<div id="completed" class="tab-content" style="display: none;">
+  <div class="card">
+    <div class="card-header"><h2 class="card-title">Completed Vehicles Archive</h2></div>
+    {% if completed_cars %}
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Produced Car ID</th>
+          <th>Parent Car ID</th>
+          <th>Model & Variant</th>
+          <th>Dealership Destination</th>
+          <th>Completion Date</th>
+          <th>Quality Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in completed_cars %}
+        <tr>
+          <td>PROD-#{{ c.Produced_Car_ID }}</td>
+          <td>#{{ c.Car_ID }}</td>
+          <td>{{ c.Model_Name }} — {{ c.Variant_Name }}</td>
+          <td>{{ c.dealership_name }}</td>
+          <td>{{ c.Completion_Date }}</td>
+          <td><span class="badge badge-completed">{{ c.Quality_Status.title() }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+      <p class="empty-state">No cars have been completed yet.</p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- TAB 5: COMPLAINTS -->
+<div id="complaints" class="tab-content" style="display: none;">
+  <div class="card">
+    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+      <h2 class="card-title">Recent Complaints</h2>
+      <a href="{{ url_for('complaints') }}" class="btn btn-primary btn-sm">View All Complaints</a>
+    </div>
+    {% if complaints %}
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Order</th>
+          <th>Customer</th>
+          <th>Priority</th>
+          <th>Status</th>
+          <th>Created</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in complaints[:5] %}  <!-- Show only first 5 complaints -->
+        <tr>
+          <td>#{{ c.Complaint_ID }}</td>
+          <td><a href="{{ url_for('manager_edit_order', order_id=c.Order_ID) }}">#{{ c.Order_ID }}</a></td>
+          <td>{{ c.customer_name }}</td>
+          <td>
+            <span class="badge badge-{{ 'danger' if c.Priority == 'urgent' else 'warning' if c.Priority == 'high' else 'info' if c.Priority == 'medium' else 'secondary' }}">
+              {{ c.Priority.title() }}
+            </span>
+          </td>
+          <td>
+            <span class="badge badge-{{ 'success' if c.Status == 'resolved' else 'primary' if c.Status == 'closed' else 'warning' if c.Status == 'investigating' else 'secondary' }}">
+              {{ c.Status.replace('_', ' ').title() }}
+            </span>
+          </td>
+          <td>{{ c.Created_At.strftime('%Y-%m-%d') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+      <p class="empty-state">No complaints found.</p>
+    {% endif %}
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  function showTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    
+    document.getElementById(tabId).style.display = 'block';
+    document.querySelector(`[onclick="showTab('${tabId}')"]`).classList.add('active');
+    
+    // Maintain tab selection in URL if possible
+    window.history.replaceState(null, null, "?tab=" + tabId);
+  }
+
+  // Restore tab from URL on load
+  document.addEventListener("DOMContentLoaded", () => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    if (tab && document.getElementById(tab)) {
+      showTab(tab);
+    }
+  });
+
+  // Chart initialization
+  const barCtx = document.getElementById('dealershipChart').getContext('2d');
+  new Chart(barCtx, {
+    type: 'bar',
+    data: {
+      labels: [{% for o in orders_per_dealership %}"{{ o.label }}",{% endfor %}],
+      datasets: [{
+        label: 'Total Orders',
+        data: [{% for o in orders_per_dealership %}{{ o.count }},{% endfor %}],
+        backgroundColor: '#3b82f6',
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+    }
+  });
+
+  const statusColors = {
+    'Pending': '#9ca3af',
+    'Accepted': '#3b82f6',
+    'In Production': '#f59e0b',
+    'Completed': '#10b981',
+    'Delivered': '#065f46'
+  };
+
+  const pieLabels = [{% for s in order_status_dist %}"{{ s.label.replace('_', ' ').title() }}",{% endfor %}];
+  const pieData = [{% for s in order_status_dist %}{{ s.count }},{% endfor %}];
+  const pieColors = pieLabels.map(label => statusColors[label] || '#9ca3af');
+
+  const pieCtx = document.getElementById('statusChart').getContext('2d');
+  new Chart(pieCtx, {
+    type: 'doughnut',
+    data: {
+      labels: pieLabels,
+      datasets: [{
+        data: pieData,
+        backgroundColor: pieColors,
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'right' }
+      }
+    }
+  });
+</script>
+{% endblock %}

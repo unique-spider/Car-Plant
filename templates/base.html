@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}CarPlant{% endblock %} — Car Plant Management</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <script>
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    if (savedTheme === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+  </script>
+</head>
+<body>
+
+  <!-- ── Sidebar ─────────────────────────────────────────── -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-icon">🏭</span>
+      <span class="brand-name">CarPlant</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      {% if session.get('role') == 'salesperson' %}
+        <a href="{{ url_for('salesperson_dashboard') }}"
+           class="nav-item {% if request.endpoint == 'salesperson_dashboard' %}active{% endif %}">
+          <span class="nav-icon">📊</span> Dashboard
+        </a>
+        <a href="{{ url_for('salesperson_orders') }}"
+           class="nav-item {% if request.endpoint == 'salesperson_orders' %}active{% endif %}">
+          <span class="nav-icon">📋</span> My Orders
+        </a>
+        <a href="{{ url_for('salesperson_new_order') }}"
+           class="nav-item {% if request.endpoint == 'salesperson_new_order' %}active{% endif %}">
+          <span class="nav-icon">➕</span> New Order
+        </a>
+        <a href="{{ url_for('salesperson_customers') }}"
+           class="nav-item {% if request.endpoint == 'salesperson_customers' %}active{% endif %}">
+          <span class="nav-icon">👥</span> Customers
+        </a>
+        <a href="{{ url_for('salesperson_variants') }}"
+           class="nav-item {% if request.endpoint == 'salesperson_variants' %}active{% endif %}">
+          <span class="nav-icon">🚗</span> Car Variants
+        </a>
+
+      {% elif session.get('role') == 'factory_worker' %}
+        <a href="{{ url_for('factory_dashboard') }}"
+           class="nav-item {% if request.endpoint == 'factory_dashboard' %}active{% endif %}">
+          <span class="nav-icon">🔧</span> My Tasks
+        </a>
+        <a href="{{ url_for('qc_dashboard') }}"
+           class="nav-item {% if request.endpoint == 'qc_dashboard' %}active{% endif %}">
+          <span class="nav-icon">🛡️</span> Quality Control
+        </a>
+
+      {% elif session.get('role') == 'manager' %}
+        <a href="{{ url_for('manager_dashboard') }}"
+           class="nav-item {% if request.endpoint == 'manager_dashboard' %}active{% endif %}">
+          <span class="nav-icon">📈</span> Dashboard
+        </a>
+        <a href="{{ url_for('manager_employees') }}"
+           class="nav-item {% if request.endpoint in ['manager_employees', 'manager_employee_detail', 'manager_salesperson_list', 'manager_factory_worker_list', 'manager_salesperson_detail', 'manager_factory_worker_detail'] %}active{% endif %}">
+          <span class="nav-icon">👥</span> Employees
+        </a>
+        <a href="{{ url_for('salesperson_dashboard') }}"
+           class="nav-item {% if request.endpoint == 'salesperson_dashboard' %}active{% endif %}">
+          <span class="nav-icon">📊</span> Sales View
+        </a>
+        <a href="{{ url_for('factory_dashboard') }}"
+           class="nav-item {% if request.endpoint == 'factory_dashboard' %}active{% endif %}">
+          <span class="nav-icon">🔧</span> Production View
+        </a>
+        <a href="{{ url_for('qc_dashboard') }}"
+           class="nav-item {% if request.endpoint == 'qc_dashboard' %}active{% endif %}">
+          <span class="nav-icon">🛡️</span> Quality Control
+        </a>
+        <a href="{{ url_for('complaints') }}"
+           class="nav-item {% if request.endpoint in ['complaints', 'new_complaint', 'update_complaint'] %}active{% endif %}">
+          <span class="nav-icon">📝</span> Complaints
+        </a>
+      {% endif %}
+
+      <!-- Account Settings for all users -->
+      <a href="{{ url_for('account_settings') }}"
+         class="nav-item {% if request.endpoint == 'account_settings' %}active{% endif %}">
+        <span class="nav-icon">⚙️</span> Account Settings
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar">{{ session.get('user_name', 'U')[0].upper() }}</div>
+        <div class="user-meta">
+          <div class="user-name">{{ session.get('user_name', '') }}</div>
+          <div class="user-role">{{ session.get('role', '').replace('_', ' ').title() }}</div>
+        </div>
+      </div>
+      <a href="{{ url_for('logout') }}" class="logout-btn">
+        <span>↩</span> Logout
+      </a>
+    </div>
+  </aside>
+
+  <!-- ── Main ─────────────────────────────────────────────── -->
+  <div class="main-wrapper">
+    <header class="top-header">
+      <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
+      <div class="header-right" style="display: flex; align-items: center; gap: 16px;">
+        <button id="themeToggleBtn" class="btn btn-ghost btn-sm" style="padding: 4px 8px; font-size: 16px;" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
+          <span id="themeIcon">🌙</span>
+        </button>
+        <span class="header-badge {{ session.get('role', '') }}">
+          {{ session.get('role', '').replace('_', ' ').title() }}
+        </span>
+      </div>
+    </header>
+
+    <main class="main-content">
+      <!-- Flash messages -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-container">
+            {% for category, message in messages %}
+              <div class="flash flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  <script>
+    function toggleTheme() {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      const newTheme = isDark ? 'light' : 'dark';
+      
+      if (newTheme === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      } else {
+        document.documentElement.removeAttribute('data-theme');
+      }
+      
+      localStorage.setItem('theme', newTheme);
+      updateThemeIcon(newTheme);
+    }
+    
+    function updateThemeIcon(theme) {
+      const icon = document.getElementById('themeIcon');
+      if (icon) {
+        icon.textContent = theme === 'dark' ? '☀️' : '🌙';
+      }
+    }
+    
+    document.addEventListener('DOMContentLoaded', () => {
+      updateThemeIcon(localStorage.getItem('theme') || 'light');
+    });
+  </script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.min.js"></script>
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

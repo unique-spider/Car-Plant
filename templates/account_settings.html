@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Account Settings{% endblock %}
+{% block page_title %}Account Settings{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">👤 Profile Information</h2>
+      </div>
+
+      <form method="POST" style="padding: 24px;">
+        <input type="hidden" name="action" value="update_profile">
+
+        <div class="form-group">
+          <label for="name">Full Name *</label>
+          <input type="text" name="name" id="name" class="form-control" value="{{ user.Name }}" required>
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email Address *</label>
+          <input type="email" name="email" id="email" class="form-control" value="{{ user.Email }}" required>
+          <small class="form-text text-muted">This email will be used for account notifications and login.</small>
+        </div>
+
+        <button type="submit" class="btn btn-primary">
+          <span style="margin-right: 8px;">💾</span> Update Profile
+        </button>
+      </form>
+    </div>
+
+    <div class="card" style="margin-top: 24px;">
+      <div class="card-header">
+        <h2 class="card-title">🔒 Change Password</h2>
+      </div>
+
+      <form method="POST" style="padding: 24px;">
+        <input type="hidden" name="action" value="change_password">
+
+        <div class="form-group">
+          <label for="current_password">Current Password *</label>
+          <input type="password" name="current_password" id="current_password" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+          <label for="new_password">New Password *</label>
+          <input type="password" name="new_password" id="new_password" class="form-control" required minlength="6">
+          <small class="form-text text-muted">Password must be at least 6 characters long.</small>
+        </div>
+
+        <div class="form-group">
+          <label for="confirm_password">Confirm New Password *</label>
+          <input type="password" name="confirm_password" id="confirm_password" class="form-control" required minlength="6">
+        </div>
+
+        <button type="submit" class="btn btn-primary">
+          <span style="margin-right: 8px;">🔑</span> Change Password
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">📋 Account Summary</h3>
+      </div>
+      <div style="padding: 24px;">
+        <div class="mb-3">
+          <strong>Role:</strong> {{ session.get('role', '').replace('_', ' ').title() }}
+        </div>
+        <div class="mb-3">
+          <strong>Account Created:</strong> {{ user.created_at.strftime('%Y-%m-%d') if user.created_at else 'N/A' }}
+        </div>
+        <div class="mb-3">
+          <strong>Last Login:</strong> {{ session.get('last_login', 'N/A') }}
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 24px;">
+      <div class="card-header">
+        <h3 class="card-title">🛡️ Security Tips</h3>
+      </div>
+      <div style="padding: 24px;">
+        <ul style="margin: 0; padding-left: 20px; font-size: 0.9rem;">
+          <li>Use a strong, unique password</li>
+          <li>Change your password regularly</li>
+          <li>Don't share your login credentials</li>
+          <li>Log out when using public computers</li>
+          <li>Report any suspicious activity</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Password confirmation validation
+document.getElementById('confirm_password').addEventListener('input', function() {
+  const newPassword = document.getElementById('new_password').value;
+  const confirmPassword = this.value;
+
+  if (newPassword !== confirmPassword) {
+    this.setCustomValidity('Passwords do not match');
+  } else {
+    this.setCustomValidity('');
+  }
+});
+</script>
+{% endblock %}

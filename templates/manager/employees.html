@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}Employee Management - Manager Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-4">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h2">👥 Employee Management</h1>
+                    <p class="text-muted mb-0">Manage and monitor all team members</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('manager_add_employee') }}" class="btn btn-success mr-2">
+                        <span>➕</span> Add Employee
+                    </a>
+                    <a href="{{ url_for('manager_dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="display-4 text-primary mb-2">{{ employees|length }}</div>
+                    <h6 class="card-title">Total Employees</h6>
+                    <p class="text-muted small mb-0">Active team members</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="display-4 text-info mb-2">
+                        {% set sp_count = employees|selectattr('Role', 'equalto', 'salesperson')|list|length %}
+                        {{ sp_count }}
+                    </div>
+                    <h6 class="card-title">Salespersons</h6>
+                    <p class="text-muted small mb-0">Order management team</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="display-4 text-success mb-2">
+                        {% set fw_count = employees|selectattr('Role', 'equalto', 'factory_worker')|list|length %}
+                        {{ fw_count }}
+                    </div>
+                    <h6 class="card-title">Factory Workers</h6>
+                    <p class="text-muted small mb-0">Production team</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters & Controls -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <form method="GET" class="form-inline">
+                                <div class="input-group input-group-sm w-100">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text bg-white border-right-0">🔍</span>
+                                    </div>
+                                    <select name="role" class="form-control border-left-0" onchange="this.form.submit()">
+                                        <option value="">All Employees</option>
+                                        <option value="salesperson" {% if current_role_filter == 'salesperson' %}selected{% endif %}>Salespersons Only</option>
+                                        <option value="factory_worker" {% if current_role_filter == 'factory_worker' %}selected{% endif %}>Factory Workers Only</option>
+                                    </select>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="col-md-6 text-md-right">
+                            <a href="{{ url_for('manager_salesperson_list') }}" class="btn btn-outline-info btn-sm mr-2 mb-2 mb-md-0">
+                                <span>📊</span> Sales Performance
+                            </a>
+                            <a href="{{ url_for('manager_factory_worker_list') }}" class="btn btn-outline-success btn-sm mb-2 mb-md-0">
+                                <span>🏭</span> Production Stats
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Employees Grid -->
+    {% if employees %}
+        <div class="row">
+            {% for emp in employees %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card border-0 shadow-sm h-100" style="transition: transform 0.2s, box-shadow 0.2s;">
+                    <div class="card-header {% if emp.Role == 'salesperson' %}bg-primary{% else %}bg-success{% endif %} text-white py-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h5 class="mb-1">{{ emp.Name }}</h5>
+                                <small>{{ emp.Email }}</small>
+                            </div>
+                            <div class="text-right">
+                                {% if emp.Role == 'salesperson' %}
+                                    <span class="badge badge-light">📋 Sales</span>
+                                {% elif emp.Role == 'factory_worker' %}
+                                    <span class="badge badge-light">🔧 Prod</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="small text-muted">Department</label>
+                            <p class="mb-0">
+                                {% if emp.Role == 'salesperson' %}
+                                    <strong>Sales & Orders</strong>
+                                {% elif emp.Role == 'factory_worker' %}
+                                    <strong>Production</strong>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="small text-muted">Dealership</label>
+                            <p class="mb-0"><strong>{{ emp.Dealership_Name or 'System-wide' }}</strong></p>
+                        </div>
+                        <div class="border-top pt-3">
+                            <div class="row">
+                                <div class="col-6">
+                                    <label class="small text-muted">Active Tasks</label>
+                                    <div style="font-size: 1.75rem;" class="text-primary"><strong>{{ emp.task_count or 0 }}</strong></div>
+                                </div>
+                                <div class="col-6 text-right">
+                                    <label class="small text-muted">Status</label>
+                                    <div class="mt-2">
+                                        <span class="badge badge-success">●</span>
+                                        <span>Active</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white border-top">
+                        <a href="{{ url_for('manager_employee_detail', employee_id=emp.User_ID) }}" 
+                           class="btn btn-primary btn-sm btn-block">
+                            View Full Profile →
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="row">
+            <div class="col-12">
+                <div class="alert alert-info text-center py-5" role="alert">
+                    <h4 class="mb-2">No employees found</h4>
+                    <p class="text-muted mb-0">There are currently no employees matching your filter criteria.</p>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Additional Features Section -->
+    <div class="row mt-5 mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">⚡ Quick Links</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3 mb-md-0">
+                            <a href="{{ url_for('manager_add_employee') }}" class="text-decoration-none">
+                                <div class="text-center p-3 bg-light rounded">
+                                    <div style="font-size: 2rem;">➕</div>
+                                    <h6 class="mt-2 mb-0">Add Employee</h6>
+                                    <small class="text-muted">Onboard new member</small>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3 mb-md-0">
+                            <a href="{{ url_for('manager_salesperson_list') }}" class="text-decoration-none">
+                                <div class="text-center p-3 bg-light rounded">
+                                    <div style="font-size: 2rem;">📊</div>
+                                    <h6 class="mt-2 mb-0">Salesperson Performance</h6>
+                                    <small class="text-muted">Orders & Metrics</small>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3 mb-md-0">
+                            <a href="{{ url_for('manager_factory_worker_list') }}" class="text-decoration-none">
+                                <div class="text-center p-3 bg-light rounded">
+                                    <div style="font-size: 2rem;">🏭</div>
+                                    <h6 class="mt-2 mb-0">Production Statistics</h6>
+                                    <small class="text-muted">Tasks & Sections</small>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('qc_dashboard') }}" class="text-decoration-none">
+                                <div class="text-center p-3 bg-light rounded">
+                                    <div style="font-size: 2rem;">🛡️</div>
+                                    <h6 class="mt-2 mb-0">Quality Control</h6>
+                                    <small class="text-muted">Issues & Status</small>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

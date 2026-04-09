@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}New Complaint{% endblock %}
+{% block page_title %}File a New Complaint{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <h2 class="card-title">File a New Customer Complaint</h2>
+  </div>
+
+  <form method="POST" style="padding: 24px;">
+    <div class="form-group">
+      <label for="order_id">Related Order *</label>
+      <select name="order_id" id="order_id" class="form-control" required>
+        <option value="">Select an order...</option>
+        {% for order in orders %}
+        <option value="{{ order.Order_ID }}">
+          #{{ order.Order_ID }} - {{ order.customer_name }} - {{ order.Variant_Name }} ({{ order.Status }})
+        </option>
+        {% endfor %}
+      </select>
+      <small class="form-text text-muted">Only completed or delivered orders can have complaints filed.</small>
+    </div>
+
+    <div class="form-group">
+      <label for="priority">Priority Level</label>
+      <select name="priority" id="priority" class="form-control">
+        <option value="low">Low - Minor issue, no rush</option>
+        <option value="medium" selected>Medium - Standard priority</option>
+        <option value="high">High - Significant issue requiring attention</option>
+        <option value="urgent">Urgent - Critical issue needing immediate resolution</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="description">Complaint Description *</label>
+      <textarea name="description" id="description" class="form-control" rows="5" required
+                placeholder="Please describe the issue in detail..."></textarea>
+      <small class="form-text text-muted">Be specific about what went wrong and what resolution you're seeking.</small>
+    </div>
+
+    <div style="display: flex; gap: 12px; margin-top: 24px;">
+      <button type="submit" class="btn btn-primary">
+        <span style="margin-right: 8px;">📝</span> Submit Complaint
+      </button>
+      <a href="{{ url_for('complaints') }}" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+
+<div class="card" style="margin-top: 24px;">
+  <div class="card-header">
+    <h3 class="card-title">📋 Complaint Guidelines</h3>
+  </div>
+  <div style="padding: 24px;">
+    <ul style="margin: 0; padding-left: 20px;">
+      <li><strong>Be Specific:</strong> Clearly describe what went wrong with the vehicle or service.</li>
+      <li><strong>Include Details:</strong> Mention order number, dates, and any relevant communication.</li>
+      <li><strong>Stay Professional:</strong> Focus on facts rather than emotions.</li>
+      <li><strong>Expect Response:</strong> All complaints are reviewed within 24-48 hours.</li>
+      <li><strong>Resolution:</strong> We'll work with you to find a satisfactory solution.</li>
+    </ul>
+  </div>
+</div>
+{% endblock %}

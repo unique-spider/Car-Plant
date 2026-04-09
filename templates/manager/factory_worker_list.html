@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Factory Workers - Manager Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h2">🏭 Production Team Statistics</h1>
+                    <p class="text-muted mb-0">Track factory worker performance and productivity</p>
+                </div>
+                <a href="{{ url_for('manager_employees') }}" class="btn btn-secondary">← Back</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <form method="GET" class="form-inline">
+                        <label class="mr-2">Filter by Section:</label>
+                        <select name="section_id" class="form-control" onchange="this.form.submit()">
+                            <option value="">All Sections</option>
+                            {% for section in production_sections %}
+                                <option value="{{ section.Section_ID }}" {% if current_section == section.Section_ID|string %}selected{% endif %}>
+                                    {{ section.Section_Name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body">
+                    <div class="display-4 text-success mb-2">{{ factory_workers|length }}</div>
+                    <h6>Total Workers</h6>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body">
+                    <div class="display-4 text-primary mb-2">
+                        {% set total_tasks = factory_workers|map(attribute='total_tasks')|sum(start=0) %}
+                        {{ total_tasks }}
+                    </div>
+                    <h6>Total Tasks</h6>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body">
+                    <div class="display-4 text-info mb-2">
+                        {% set completed = factory_workers|map(attribute='completed_tasks')|sum(start=0) %}
+                        {{ completed }}
+                    </div>
+                    <h6>Completed</h6>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body">
+                    <div class="display-4 text-warning mb-2">
+                        {% set pending = factory_workers|map(attribute='pending_tasks')|sum(start=0) %}
+                        {{ pending }}
+                    </div>
+                    <h6>In Progress</h6>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Details Table -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Production Staff Details</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="bg-light border-bottom">
+                            <tr>
+                                <th class="py-3">Name</th>
+                                <th>Email</th>
+                                <th class="text-center">Total Tasks</th>
+                                <th class="text-center">Completed</th>
+                                <th class="text-center">In Progress</th>
+                                <th class="text-center">Completion Rate</th>
+                                <th>Assigned Sections</th>
+                                <th class="text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if factory_workers %}
+                                {% for worker in factory_workers %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ worker.Name }}</strong>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ worker.Email }}</small>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge badge-primary">{{ worker.total_tasks or 0 }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge badge-success">{{ worker.completed_tasks or 0 }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge badge-warning">{{ worker.pending_tasks or 0 }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if worker.total_tasks and worker.total_tasks > 0 %}
+                                            {% set rate = (worker.completed_tasks or 0) * 100 / worker.total_tasks %}
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar" style="width: {{ rate }}%">
+                                                    {{ '{:.0f}'.format(rate) }}%
+                                                </div>
+                                            </div>
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if worker.assigned_sections %}
+                                            <small>{{ worker.assigned_sections }}</small>
+                                        {% else %}
+                                            <span class="text-muted">None</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <a href="{{ url_for('manager_employee_detail', employee_id=worker.User_ID) }}" 
+                                           class="btn btn-sm btn-outline-success">Profile</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="8" class="text-center py-4 text-muted">
+                                        No factory workers found for the selected criteria.
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

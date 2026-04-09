@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Factory Dashboard{% endblock %}
+{% block page_title %}Welcome {{ session.get('user_name', 'Worker') }} — {{ section_name }}{% endblock %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 32px;">
+  <div class="card-header">
+    <h2 class="card-title">Pending Tasks</h2>
+  </div>
+  {% if pending_tasks %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Car ID</th>
+        <th>Order ID</th>
+        <th>Model</th>
+        <th>Variant</th>
+        <th>Production Start Date</th>
+        <th style="text-align: right;">Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in pending_tasks %}
+      <tr>
+        <td>#{{ t.Car_ID }}</td>
+        <td>{{ t.Order_ID }}</td>
+        <td>{{ t.Model_Name }}</td>
+        <td>{{ t.Variant_Name }}</td>
+        <td>{{ t.Production_Start_Date }}</td>
+        <td style="text-align: right; display: flex; justify-content: flex-end; gap: 8px;">
+          <form method="POST" action="{{ url_for('qc_raise') }}" style="display: flex; gap: 4px;">
+            <input type="hidden" name="car_id" value="{{ t.Car_ID }}">
+            <input type="text" name="description" placeholder="Report QC issue..." class="form-control" style="padding: 4px 8px; font-size: 12px; width: 140px;" required>
+            <button type="submit" class="btn btn-ghost btn-sm" style="padding: 4px 8px; color: #dc2626; border-color: #fca5a5;" title="Flag an issue for Quality Control">Flag</button>
+          </form>
+          <form method="POST" action="{{ url_for('factory_complete_section') }}">
+            <input type="hidden" name="progress_id" value="{{ t.Progress_ID }}">
+            <button type="submit" class="btn btn-primary btn-sm">Mark Complete</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p class="empty-state">No pending tasks found for your section.</p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h2 class="card-title">Recently Completed</h2>
+  </div>
+  {% if completed_tasks %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Car ID</th>
+        <th>Model</th>
+        <th>Variant</th>
+        <th>Completion Date</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in completed_tasks %}
+      <tr>
+        <td>#{{ t.Car_ID }}</td>
+        <td>{{ t.Model_Name }}</td>
+        <td>{{ t.Variant_Name }}</td>
+        <td>{{ t.Completion_Date }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p class="empty-state">No completed tasks yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

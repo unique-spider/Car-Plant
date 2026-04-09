@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Add Employee - Manager Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-4">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2">➕ Add New Employee</h1>
+                    <p class="text-muted mb-0">Onboard a new team member to the system</p>
+                </div>
+                <a href="{{ url_for('manager_employees') }}" class="btn btn-secondary">← Back to Employees</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Container -->
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card border-0 shadow">
+                <div class="card-header bg-primary text-white py-4">
+                    <h5 class="mb-0">📋 Employee Information</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" novalidate>
+                        <!-- Name Field -->
+                        <div class="form-group">
+                            <label for="name" class="font-weight-bold">
+                                Full Name <span class="text-danger">*</span>
+                            </label>
+                            <input 
+                                type="text" 
+                                class="form-control form-control-lg" 
+                                id="name" 
+                                name="name" 
+                                placeholder="Enter employee full name"
+                                required>
+                            <small class="text-muted">Employee's first and last name</small>
+                        </div>
+
+                        <!-- Email Field -->
+                        <div class="form-group">
+                            <label for="email" class="font-weight-bold">
+                                Email Address <span class="text-danger">*</span>
+                            </label>
+                            <input 
+                                type="email" 
+                                class="form-control form-control-lg" 
+                                id="email" 
+                                name="email" 
+                                placeholder="username@company.com"
+                                required>
+                            <small class="text-muted">Must be unique in the system</small>
+                        </div>
+
+                        <!-- Password Field -->
+                        <div class="form-group">
+                            <label for="password" class="font-weight-bold">
+                                Initial Password <span class="text-danger">*</span>
+                            </label>
+                            <input 
+                                type="password" 
+                                class="form-control form-control-lg" 
+                                id="password" 
+                                name="password" 
+                                placeholder="Enter a secure password"
+                                required>
+                            <small class="text-muted">Employee can change this after first login</small>
+                        </div>
+
+                        <!-- Role Field -->
+                        <div class="form-group">
+                            <label for="role" class="font-weight-bold">
+                                Role <span class="text-danger">*</span>
+                            </label>
+                            <select 
+                                class="form-control form-control-lg" 
+                                id="role" 
+                                name="role"
+                                required
+                                onchange="toggleDealershipField()">
+                                <option value="">-- Select a role --</option>
+                                <option value="salesperson">Salesperson</option>
+                                <option value="factory_worker">Factory Worker</option>
+                            </select>
+                            <small class="text-muted">Select the employee's primary role</small>
+                        </div>
+
+                        <!-- Dealership Field (only for salespersons) -->
+                        <div class="form-group" id="dealership_group" style="display: none;">
+                            <label for="dealership_id" class="font-weight-bold">
+                                Assigned Dealership
+                            </label>
+                            <select 
+                                class="form-control form-control-lg" 
+                                id="dealership_id" 
+                                name="dealership_id">
+                                <option value="">-- System-wide access --</option>
+                                {% for d in dealerships %}
+                                    <option value="{{ d.Dealership_ID }}">{{ d.Name }}</option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">Optional: Restrict access to a specific dealership</small>
+                        </div>
+
+                        <!-- Info Alert -->
+                        <div class="alert alert-info mb-4">
+                            <strong>📝 Note:</strong> Employees can access all role-appropriate features based on their role assignment.
+                        </div>
+
+                        <!-- Buttons -->
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary btn-lg btn-block">
+                                <span>➕</span> Add Employee
+                            </button>
+                            <a href="{{ url_for('manager_employees') }}" class="btn btn-light btn-lg btn-block mt-2">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Security Info Card -->
+            <div class="card border-0 shadow mt-3" style="background: #f0f7ff;">
+                <div class="card-body">
+                    <h6 class="font-weight-bold mb-3">🔒 Security Guidelines</h6>
+                    <ul class="small mb-0">
+                        <li>Use strong passwords (mix of letters, numbers, and symbols)</li>
+                        <li>Email address must be unique in the system</li>
+                        <li>Factory workers cannot be assigned to specific dealerships</li>
+                        <li>Employees should change their password on first login</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleDealershipField() {
+    const role = document.getElementById('role').value;
+    const dealershipGroup = document.getElementById('dealership_group');
+    
+    if (role === 'salesperson') {
+        dealershipGroup.style.display = 'block';
+    } else {
+        dealershipGroup.style.display = 'none';
+    }
+}
+</script>
+{% endblock %}

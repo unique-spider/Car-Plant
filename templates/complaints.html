@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% block title %}Complaints{% endblock %}
+{% block page_title %}Complaint Management{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+    <h2 class="card-title">Customer Complaints</h2>
+    {% if session.get('role') in ['manager', 'salesperson'] %}
+    <a href="{{ url_for('new_complaint') }}" class="btn btn-primary">
+      <span style="margin-right: 8px;">📝</span> New Complaint
+    </a>
+    {% endif %}
+  </div>
+
+  {% if complaints %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Order</th>
+        <th>Customer</th>
+        <th>Description</th>
+        <th>Priority</th>
+        <th>Status</th>
+        <th>Created</th>
+        {% if is_manager %}
+        <th>Assigned To</th>
+        <th>Actions</th>
+        {% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for complaint in complaints %}
+      <tr>
+        <td>#{{ complaint.Complaint_ID }}</td>
+        <td>
+          <a href="{{ url_for('manager_edit_order', order_id=complaint.Order_ID) }}">#{{ complaint.Order_ID }}</a>
+          <br><small class="text-muted">{{ complaint.order_status }}</small>
+        </td>
+        <td>{{ complaint.customer_name }}</td>
+        <td>
+          <div style="max-width: 300px; overflow: hidden; text-overflow: ellipsis;">
+            {{ complaint.Description }}
+          </div>
+        </td>
+        <td>
+          <span class="badge badge-{{ 'danger' if complaint.Priority == 'urgent' else 'warning' if complaint.Priority == 'high' else 'info' if complaint.Priority == 'medium' else 'secondary' }}">
+            {{ complaint.Priority.title() }}
+          </span>
+        </td>
+        <td>
+          <span class="badge badge-{{ 'success' if complaint.Status == 'resolved' else 'primary' if complaint.Status == 'closed' else 'warning' if complaint.Status == 'investigating' else 'secondary' }}">
+            {{ complaint.Status.replace('_', ' ').title() }}
+          </span>
+        </td>
+        <td>{{ complaint.Created_At.strftime('%Y-%m-%d') }}</td>
+        {% if is_manager %}
+        <td>{{ complaint.assigned_to_name or 'Unassigned' }}</td>
+        <td>
+          <button class="btn btn-sm btn-outline-primary" onclick="openUpdateModal({{ complaint.Complaint_ID }}, '{{ complaint.Status }}', {{ complaint.Assigned_To or 'null' }}, '{{ complaint.Resolution_Notes or '' }}')">
+            Update
+          </button>
+        </td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p class="empty-state">No complaints found.</p>
+  {% endif %}
+</div>
+
+{% if is_manager %}
+<!-- Update Complaint Modal -->
+<div id="updateModal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Update Complaint</h3>
+      <span class="modal-close" onclick="closeUpdateModal()">&times;</span>
+    </div>
+    <form id="updateForm" method="POST">
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Status</label>
+          <select name="status" class="form-control" required>
+            <option value="open">Open</option>
+            <option value="investigating">Investigating</option>
+            <option value="resolved">Resolved</option>
+            <option value="closed">Closed</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Assign To</label>
+          <select name="assigned_to" class="form-control">
+            <option value="">Unassigned</option>
+            {% for user in users %}
+            <option value="{{ user.User_ID }}">{{ user.Name }} ({{ user.Role }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Resolution Notes</label>
+          <textarea name="resolution_notes" class="form-control" rows="3" placeholder="Add resolution notes..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeUpdateModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary">Update Complaint</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<script>
+function openUpdateModal(complaintId, currentStatus, assignedTo, resolutionNotes) {
+  document.getElementById('updateForm').action = `/complaints/${complaintId}/update`;
+  document.querySelector('[name="status"]').value = currentStatus;
+  document.querySelector('[name="assigned_to"]').value = assignedTo;
+  document.querySelector('[name="resolution_notes"]').value = resolutionNotes || '';
+  document.getElementById('updateModal').style.display = 'block';
+}
+
+function closeUpdateModal() {
+  document.getElementById('updateModal').style.display = 'none';
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+  const modal = document.getElementById('updateModal');
+  if (event.target == modal) {
+    modal.style.display = 'none';
+  }
+}
+</script>
+
+<style>
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+  background-color: white;
+  margin: 10% auto;
+  padding: 0;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.modal-header {
+  padding: 20px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.modal-footer {
+  padding: 20px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.modal-close {
+  cursor: pointer;
+  font-size: 24px;
+  color: #6b7280;
+}
+
+.modal-close:hover {
+  color: #374151;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}New Order{% endblock %}
+{% block page_title %}Place New Order{% endblock %}
+
+{% block content %}
+<div class="card form-card">
+  <div class="card-header">
+    <h2 class="card-title">New Order</h2>
+  </div>
+  <form method="POST" action="{{ url_for('salesperson_new_order') }}" class="form-body">
+    <div class="form-group">
+      <label for="customer_id">Customer</label>
+      <select id="customer_id" name="customer_id" required>
+        <option value="" disabled selected>— Select a customer —</option>
+        {% for c in customers %}
+          <option value="{{ c.Customer_ID }}">{{ c.Name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="model_id">Car Model</label>
+      <select id="model_id" name="model_id" required onchange="filterVariants()">
+        <option value="" disabled selected>— Select a model —</option>
+        {% for m in models %}
+          <option value="{{ m.Model_ID }}">{{ m.Model_Name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="variant_id">Car Variant</label>
+      <select id="variant_id" name="variant_id" required disabled>
+        <option value="" disabled selected>— Select a model first —</option>
+        {% for v in variants %}
+          <option value="{{ v.Variant_ID }}" data-model="{{ v.Model_ID }}">{{ v.Variant_Name }} — ${{ "{:,.0f}".format(v.Cost) }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="order_date">Order Date</label>
+      <input type="date" id="order_date" name="order_date" required />
+    </div>
+
+    <div class="form-actions">
+      <a href="{{ url_for('salesperson_orders') }}" class="btn btn-ghost">Cancel</a>
+      <button type="submit" class="btn btn-primary">Place Order</button>
+    </div>
+  </form>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    // Auto-set date to today if empty
+    if (!document.getElementById('order_date').value) {
+      document.getElementById('order_date').valueAsDate = new Date();
+    }
+  });
+
+  function filterVariants() {
+    const modelSelect = document.getElementById("model_id");
+    const variantSelect = document.getElementById("variant_id");
+    const selectedModel = modelSelect.value;
+    
+    variantSelect.disabled = false;
+    variantSelect.value = ""; 
+    variantSelect.options[0].text = "— Select a variant —";
+    
+    for (let i = 1; i < variantSelect.options.length; i++) {
+        let opt = variantSelect.options[i];
+        if (opt.getAttribute("data-model") === selectedModel) {
+            opt.style.display = "block";
+        } else {
+            opt.style.display = "none";
+        }
+    }
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Stat cards -->
+<div class="stat-grid">
+  <div class="stat-card">
+    <div class="stat-icon blue">📋</div>
+    <div class="stat-body">
+      <div class="stat-value">{{ total_orders }}</div>
+      <div class="stat-label">Total Orders</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon yellow">⏳</div>
+    <div class="stat-body">
+      <div class="stat-value">{{ pending }}</div>
+      <div class="stat-label">Pending</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon green">✅</div>
+    <div class="stat-body">
+      <div class="stat-value">{{ delivered }}</div>
+      <div class="stat-label">Delivered Orders</div>
+    </div>
+  </div>
+</div>
+
+<!-- Recent orders table -->
+<div class="card">
+  <div class="card-header">
+    <h2 class="card-title">Recent Orders</h2>
+    <a href="{{ url_for('salesperson_new_order') }}" class="btn btn-primary btn-sm">+ New Order</a>
+  </div>
+  {% if recent_orders %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Customer</th>
+        <th>Variant</th>
+        <th>Date</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for o in recent_orders %}
+      <tr>
+        <td>{{ o.Order_ID }}</td>
+        <td>{{ o.customer_name }}</td>
+        <td>{{ o.Variant_Name }}</td>
+        <td>{{ o.Order_Date }}</td>
+        <td><span class="badge badge-{{ o.Status }}">{{ o.Status.replace('_',' ').title() }}</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p class="empty-state">No orders yet. <a href="{{ url_for('salesperson_new_order') }}">Place your first order →</a></p>
+  {% endif %}
+</div>
+{% endblock %}

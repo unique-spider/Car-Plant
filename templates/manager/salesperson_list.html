@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}Salespersons - Manager Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h2">📊 Salesperson Performance</h1>
+                    <p class="text-muted mb-0">Monitor sales team metrics and activity</p>
+                </div>
+                <a href="{{ url_for('manager_employees') }}" class="btn btn-secondary">← Back</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <form method="GET" class="form-inline">
+                        <label class="mr-2">Filter by Dealership:</label>
+                        <select name="dealership_id" class="form-control mr-3" onchange="this.form.submit()">
+                            <option value="">All Dealerships</option>
+                            {% for d in dealerships %}
+                                <option value="{{ d.Dealership_ID }}" {% if current_dealership == d.Dealership_ID|string %}selected{% endif %}>
+                                    {{ d.Name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body">
+                    <div class="display-4 text-primary mb-2">{{ salespersons|length }}</div>
+                    <h6>Total Salespersons</h6>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body">
+                    <div class="display-4 text-success mb-2">
+                        {% set total_orders = salespersons|map(attribute='total_orders')|sum(start=0) %}
+                        {{ total_orders }}
+                    </div>
+                    <h6>Total Orders</h6>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body">
+                    <div class="display-4 text-info mb-2">
+                        {% set completed = salespersons|map(attribute='completed_orders')|sum(start=0) %}
+                        {{ completed }}
+                    </div>
+                    <h6>Completed</h6>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body">
+                    <div class="display-4 text-warning mb-2">
+                        {% set total_customers = salespersons|map(attribute='total_customers')|sum(start=0) %}
+                        {{ total_customers }}
+                    </div>
+                    <h6>Total Customers</h6>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Details Table -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Team Members</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="bg-light border-bottom">
+                            <tr>
+                                <th class="py-3">Name</th>
+                                <th>Email</th>
+                                <th class="text-center">Dealership</th>
+                                <th class="text-center">Total Orders</th>
+                                <th class="text-center">Completed</th>
+                                <th class="text-center">Delivered</th>
+                                <th class="text-center">Customers</th>
+                                <th class="text-center">Last Order</th>
+                                <th class="text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if salespersons %}
+                                {% for salesperson in salespersons %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ salesperson.Name }}</strong>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ salesperson.Email }}</small>
+                                    </td>
+                                    <td class="text-center">{{ salesperson.Dealership_Name or '—' }}</td>
+                                    <td class="text-center">
+                                        <span class="badge badge-primary">{{ salesperson.total_orders or 0 }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge badge-success">{{ salesperson.completed_orders or 0 }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge badge-info">{{ salesperson.delivered_orders or 0 }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge badge-secondary">{{ salesperson.total_customers or 0 }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        {{ salesperson.last_order_date.strftime('%Y-%m-%d') if salesperson.last_order_date else '—' }}
+                                    </td>
+                                    <td class="text-center">
+                                        <a href="{{ url_for('manager_employee_detail', employee_id=salesperson.User_ID) }}" 
+                                           class="btn btn-sm btn-outline-primary">Profile</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="9" class="text-center py-4 text-muted">
+                                        No salespersons found for the selected criteria.
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

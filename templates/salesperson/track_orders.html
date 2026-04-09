@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Track Orders{% endblock %}
+{% block page_title %}My Orders{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header" style="flex-wrap: wrap; gap: 16px;">
+    <h2 class="card-title">All Orders</h2>
+    <div style="display: flex; gap: 12px; align-items: center;">
+      <form method="GET" action="{{ url_for('salesperson_orders') }}" style="display: flex; gap: 8px;">
+        <select name="status" class="form-control" style="padding: 6px 10px; width: auto;" onchange="this.form.submit()">
+          <option value="">All Statuses</option>
+          <option value="pending" {% if current_status == 'pending' %}selected{% endif %}>Pending</option>
+          <option value="accepted" {% if current_status == 'accepted' %}selected{% endif %}>Accepted</option>
+          <option value="in_production" {% if current_status == 'in_production' %}selected{% endif %}>In Production</option>
+          <option value="completed" {% if current_status == 'completed' %}selected{% endif %}>Completed</option>
+          <option value="delivered" {% if current_status == 'delivered' %}selected{% endif %}>Delivered</option>
+        </select>
+      </form>
+      <a href="{{ url_for('salesperson_new_order') }}" class="btn btn-primary btn-sm">+ New Order</a>
+    </div>
+  </div>
+  {% if orders %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Order ID</th>
+        <th>Customer Name</th>
+        <th>Model</th>
+        <th>Variant</th>
+        <th>Order Date</th>
+        <th>Status</th>
+        <th>Production Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for o in orders %}
+      <tr>
+        <td>#{{ o.Order_ID }}</td>
+        <td>{{ o.customer_name }}</td>
+        <td>{{ o.Model_Name }}</td>
+        <td>{{ o.Variant_Name }}</td>
+        <td>{{ o.Order_Date }}</td>
+        <td><span class="badge badge-{{ o.Status }}">{{ o.Status.replace('_',' ').title() }}</span></td>
+        <td><span class="badge badge-blue" style="background:var(--grey-100); color:var(--grey-700);">{{ o.Production_Status }}</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p class="empty-state">No orders found matching your criteria.</p>
+  {% endif %}
+</div>
+{% endblock %}

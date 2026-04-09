@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Quality Control{% endblock %}
+{% block page_title %}Quality Control Dashboard{% endblock %}
+
+{% block content %}
+<div class="tabs" style="margin-bottom: 24px; border-bottom: 1px solid var(--grey-200); padding-bottom: 8px;">
+  <button class="btn btn-ghost tab-btn active" onclick="showTab('active-issues')">Active QC Issues</button>
+  <button class="btn btn-ghost tab-btn" onclick="showTab('resolved-issues')">Resolved Archive</button>
+</div>
+
+<!-- TAB 1: ACTIVE ISSUES -->
+<div id="active-issues" class="tab-content">
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title" style="color: var(--error-text);">Action Required: Open Quality Issues</h2>
+    </div>
+    {% if open_issues %}
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Issue ID</th>
+          <th>Car ID</th>
+          <th>Model & Variant</th>
+          <th>Reported By</th>
+          <th>Issue Description</th>
+          <th>Logged At</th>
+          <th style="text-align: right;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for i in open_issues %}
+        <tr>
+          <td>#{{ i.Issue_ID }}</td>
+          <td><b>#{{ i.Car_ID }}</b></td>
+          <td>{{ i.Model_Name }} — {{ i.Variant_Name }}</td>
+          <td>{{ i.Reporter_Name }}</td>
+          <td><span style="color: var(--error-text); font-weight: 500;">{{ i.Description }}</span></td>
+          <td>{{ i.Created_At.strftime('%Y-%m-%d %H:%M') }}</td>
+          <td style="text-align: right;">
+            <form method="POST" action="{{ url_for('qc_resolve') }}">
+              <input type="hidden" name="issue_id" value="{{ i.Issue_ID }}">
+              <button type="submit" class="btn btn-primary btn-sm" style="background: var(--blue-600);">Mark Resolved</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+      <div class="empty-state" style="padding: 60px 20px;">
+        <div style="font-size: 40px; margin-bottom: 12px;">🎉</div>
+        <p>Excellent work! There are currently no open active quality control issues.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- TAB 2: RESOLVED ISSUES -->
+<div id="resolved-issues" class="tab-content" style="display: none;">
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">Resolved QC History</h2>
+    </div>
+    {% if resolved_issues %}
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Issue ID</th>
+          <th>Car ID</th>
+          <th>Model & Variant</th>
+          <th>Reported By</th>
+          <th>Issue Description</th>
+          <th>Resolution Date</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for i in resolved_issues %}
+        <tr>
+          <td>#{{ i.Issue_ID }}</td>
+          <td>#{{ i.Car_ID }}</td>
+          <td>{{ i.Model_Name }} — {{ i.Variant_Name }}</td>
+          <td>{{ i.Reporter_Name }}</td>
+          <td style="color: var(--grey-500);"><del>{{ i.Description }}</del></td>
+          <td>{{ i.Resolved_At.strftime('%Y-%m-%d %H:%M') }}</td>
+          <td><span class="badge badge-completed">Resolved</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+      <p class="empty-state">No historical QC resolutions found.</p>
+    {% endif %}
+  </div>
+</div>
+
+<style>
+  .tab-btn.active {
+    background-color: var(--blue-50);
+    color: var(--blue-600);
+    border-bottom: 2px solid var(--blue-600);
+    border-radius: 6px 6px 0 0;
+  }
+</style>
+
+<script>
+  function showTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    
+    document.getElementById(tabId).style.display = 'block';
+    document.querySelector(`[onclick="showTab('${tabId}')"]`).classList.add('active');
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}Edit Order #{{ order.Order_ID }}{% endblock %}
+{% block page_title %}Edit Order #{{ order.Order_ID }}{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <h2 class="card-title">Order Details</h2>
+  </div>
+
+  <div style="padding: 24px;">
+    <div class="row">
+      <div class="col-md-6">
+        <h4>Order Information</h4>
+        <table class="table table-borderless">
+          <tr>
+            <td><strong>Order ID:</strong></td>
+            <td>#{{ order.Order_ID }}</td>
+          </tr>
+          <tr>
+            <td><strong>Customer:</strong></td>
+            <td>{{ order.customer_name }}</td>
+          </tr>
+          <tr>
+            <td><strong>Email:</strong></td>
+            <td>{{ order.customer_email }}</td>
+          </tr>
+          <tr>
+            <td><strong>Dealership:</strong></td>
+            <td>{{ order.dealership_name or 'N/A' }}</td>
+          </tr>
+          <tr>
+            <td><strong>Vehicle:</strong></td>
+            <td>{{ order.Model_Name }} - {{ order.Variant_Name }}</td>
+          </tr>
+          <tr>
+            <td><strong>Order Date:</strong></td>
+            <td>{{ order.Order_Date }}</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="col-md-6">
+        <h4>Status Update</h4>
+        <form method="POST">
+          <div class="form-group">
+            <label for="status">Current Status: <span class="badge badge-{{ order.Status }}">{{ order.Status.replace('_', ' ').title() }}</span></label>
+            <select name="status" id="status" class="form-control" required>
+              {% for status in available_statuses %}
+              <option value="{{ status }}" {% if status == order.Status %}selected{% endif %}>
+                {{ status.replace('_', ' ').title() }}
+              </option>
+              {% endfor %}
+            </select>
+            <small class="form-text text-muted">
+              {% if order.Status == 'delivered' %}
+              ⚠️ This order has already been delivered. Changes should be made with caution.
+              {% endif %}
+            </small>
+          </div>
+
+          <div class="form-group">
+            <label for="notes">Change Notes (Optional)</label>
+            <textarea name="notes" id="notes" class="form-control" rows="3"
+                      placeholder="Brief notes about this status change..."></textarea>
+          </div>
+
+          <div style="display: flex; gap: 12px;">
+            <button type="submit" class="btn btn-primary">
+              <span style="margin-right: 8px;">💾</span> Update Status
+            </button>
+            {% if order.Status not in ['delivered', 'completed', 'cancelled'] %}
+            <button type="button" class="btn btn-danger" onclick="openCancelModal()">
+              <span style="margin-right: 8px;">❌</span> Cancel Order
+            </button>
+            {% endif %}
+            <a href="{{ url_for('manager_dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Cancel Order Modal -->
+<div id="cancelModal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Cancel Order</h3>
+      <span class="modal-close" onclick="closeCancelModal()">&times;</span>
+    </div>
+    <form method="POST" action="{{ url_for('manager_cancel_order', order_id=order.Order_ID) }}">
+      <div class="modal-body">
+        <p>Are you sure you want to cancel Order #{{ order.Order_ID }}?</p>
+        <p class="text-warning">This action cannot be undone and will stop any ongoing production.</p>
+
+        <div class="form-group">
+          <label>Cancellation Reason (Optional)</label>
+          <textarea name="reason" class="form-control" rows="3" placeholder="Reason for cancellation..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeCancelModal()">Keep Order</button>
+        <button type="submit" class="btn btn-danger">Cancel Order</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openCancelModal() {
+  document.getElementById('cancelModal').style.display = 'block';
+}
+
+function closeCancelModal() {
+  document.getElementById('cancelModal').style.display = 'none';
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+  const modal = document.getElementById('cancelModal');
+  if (event.target == modal) {
+    modal.style.display = 'none';
+  }
+}
+</script>
+
+<style>
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+  background-color: white;
+  margin: 10% auto;
+  padding: 0;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.modal-header {
+  padding: 20px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.modal-footer {
+  padding: 20px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.modal-close {
+  cursor: pointer;
+  font-size: 24px;
+  color: #6b7280;
+}
+
+.modal-close:hover {
+  color: #374151;
+}
+</style>
+{% endblock %}
