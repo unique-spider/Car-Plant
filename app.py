@@ -26,6 +26,161 @@ def _new_connection():
         cursorclass=pymysql.cursors.DictCursor,
     )
 
+# ──────────────────────────────────────────────
+# Auto-initialize database tables on startup
+# ──────────────────────────────────────────────
+def init_db():
+    schema_sql = """
+CREATE TABLE IF NOT EXISTS DEALERSHIP (
+    Dealership_ID INT AUTO_INCREMENT PRIMARY KEY,
+    Name          VARCHAR(150) NOT NULL,
+    Location      VARCHAR(255) NOT NULL,
+    Contact       VARCHAR(50)  NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS USER (
+    User_ID        INT AUTO_INCREMENT PRIMARY KEY,
+    Name           VARCHAR(150) NOT NULL,
+    Email          VARCHAR(255) NOT NULL UNIQUE,
+    Password       VARCHAR(255) NOT NULL,
+    Role           ENUM('salesperson', 'factory_worker', 'manager') NOT NULL,
+    Dealership_ID  INT NULL,
+    CONSTRAINT fk_user_dealership FOREIGN KEY (Dealership_ID)
+        REFERENCES DEALERSHIP(Dealership_ID)
+        ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS CUSTOMER (
+    Customer_ID   INT AUTO_INCREMENT PRIMARY KEY,
+    Name          VARCHAR(150) NOT NULL,
+    Phone         VARCHAR(20)  NOT NULL,
+    Email         VARCHAR(255) NOT NULL UNIQUE,
+    Address       VARCHAR(255) NOT NULL,
+    Dealership_ID INT NOT NULL,
+    CONSTRAINT fk_customer_dealership FOREIGN KEY (Dealership_ID)
+        REFERENCES DEALERSHIP(Dealership_ID)
+        ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS MODEL (
+    Model_ID      INT AUTO_INCREMENT PRIMARY KEY,
+    Model_Name    VARCHAR(150) NOT NULL,
+    Manufacturer  VARCHAR(150) NOT NULL,
+    Launch_Year   YEAR         NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS VARIANT (
+    Variant_ID    INT AUTO_INCREMENT PRIMARY KEY,
+    Model_ID      INT            NOT NULL,
+    Variant_Name  VARCHAR(150)   NOT NULL,
+    Engine_Type   VARCHAR(100)   NOT NULL,
+    Fuel_Type     VARCHAR(50)    NOT NULL,
+    Transmission  VARCHAR(50)    NOT NULL,
+    Cost          DECIMAL(12, 2) NOT NULL,
+    CONSTRAINT fk_variant_model FOREIGN KEY (Model_ID)
+        REFERENCES MODEL(Model_ID)
+        ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS PART (
+    Part_ID     INT AUTO_INCREMENT PRIMARY KEY,
+    Part_Name   VARCHAR(150) NOT NULL,
+    Description TEXT
+);
+
+CREATE TABLE IF NOT EXISTS VARIANT_PART (
+    Variant_ID        INT NOT NULL,
+    Part_ID           INT NOT NULL,
+    Required_Quantity INT NOT NULL DEFAULT 1,
+    PRIMARY KEY (Variant_ID, Part_ID),
+    CONSTRAINT fk_vp_variant FOREIGN KEY (Variant_ID)
+        REFERENCES VARIANT(Variant_ID) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_vp_part FOREIGN KEY (Part_ID)
+        REFERENCES PART(Part_ID) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS ORDER_TABLE (
+    Order_ID       INT AUTO_INCREMENT PRIMARY KEY,
+    Customer_ID    INT NOT NULL,
+    Variant_ID     INT NOT NULL,
+    Salesperson_ID INT NOT NULL,
+    Order_Date     DATE NOT NULL,
+    Status         ENUM('pending','accepted','in_production','completed','delivered') NOT NULL DEFAULT 'pending',
+    CONSTRAINT fk_order_customer    FOREIGN KEY (Customer_ID)    REFERENCES CUSTOMER(Customer_ID) ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT fk_order_variant     FOREIGN KEY (Variant_ID)     REFERENCES VARIANT(Variant_ID)   ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT fk_order_salesperson FOREIGN KEY (Salesperson_ID) REFERENCES USER(User_ID)         ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS CAR_PRODUCTION (
+    Car_ID                INT AUTO_INCREMENT PRIMARY KEY,
+    Order_ID              INT  NOT NULL,
+    Variant_ID            INT  NOT NULL,
+    Production_Start_Date DATE NOT NULL,
+    Status                ENUM('in_production','completed') NOT NULL DEFAULT 'in_production',
+    CONSTRAINT fk_cp_order   FOREIGN KEY (Order_ID)   REFERENCES ORDER_TABLE(Order_ID) ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT fk_cp_variant FOREIGN KEY (Variant_ID) REFERENCES VARIANT(Variant_ID)   ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS PRODUCTION_SECTION (
+    Section_ID   INT AUTO_INCREMENT PRIMARY KEY,
+    Section_Name VARCHAR(150) NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS SECTION_PROGRESS (
+    Progress_ID       INT AUTO_INCREMENT PRIMARY KEY,
+    Car_ID            INT  NOT NULL,
+    Section_ID        INT  NOT NULL,
+    Worker_ID         INT  NOT NULL,
+    Completion_Status ENUM('pending','completed','failed') NOT NULL DEFAULT 'pending',
+    Completion_Date   DATE NULL,
+    CONSTRAINT fk_sp_car     FOREIGN KEY (Car_ID)     REFERENCES CAR_PRODUCTION(Car_ID)         ON DELETE CASCADE  ON UPDATE CASCADE,
+    CONSTRAINT fk_sp_section FOREIGN KEY (Section_ID) REFERENCES PRODUCTION_SECTION(Section_ID) ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT fk_sp_worker  FOREIGN KEY (Worker_ID)  REFERENCES USER(User_ID)                  ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS ISSUE_LOG (
+    Issue_ID    INT AUTO_INCREMENT PRIMARY KEY,
+    Car_ID      INT NOT NULL,
+    Reporter_ID INT NOT NULL,
+    Description TEXT NOT NULL,
+    Status      ENUM('open','resolved') NOT NULL DEFAULT 'open',
+    Created_At  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    Resolved_At TIMESTAMP NULL,
+    CONSTRAINT fk_il_car      FOREIGN KEY (Car_ID)      REFERENCES CAR_PRODUCTION(Car_ID) ON DELETE CASCADE  ON UPDATE CASCADE,
+    CONSTRAINT fk_il_reporter FOREIGN KEY (Reporter_ID) REFERENCES USER(User_ID)          ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS PRODUCED_CAR (
+    Produced_Car_ID INT AUTO_INCREMENT PRIMARY KEY,
+    Car_ID          INT  NOT NULL UNIQUE,
+    Completion_Date DATE NOT NULL,
+    Quality_Status  ENUM('passed','failed') NOT NULL,
+    CONSTRAINT fk_pc_car FOREIGN KEY (Car_ID) REFERENCES CAR_PRODUCTION(Car_ID) ON DELETE RESTRICT ON UPDATE CASCADE
+);
+"""
+    try:
+        conn = _new_connection()
+        conn.autocommit = True
+        cur = conn.cursor()
+        for statement in schema_sql.strip().split(';'):
+            s = statement.strip()
+            if s:
+                cur.execute(s)
+        # Seed production sections if empty
+        cur.execute("SELECT COUNT(*) as cnt FROM PRODUCTION_SECTION")
+        if cur.fetchone()['cnt'] == 0:
+            sections = ['Body Shop','Paint Shop','Engine Assembly','Trim and Chassis','Final Assembly','Quality Inspection']
+            for sec in sections:
+                cur.execute("INSERT INTO PRODUCTION_SECTION (Section_Name) VALUES (%s)", (sec,))
+        cur.close()
+        conn.close()
+        print("✅ Database initialized successfully.")
+    except Exception as e:
+        print(f"⚠️ DB init warning: {e}")
+
+with app.app_context():
+    init_db()
+
 def get_db():
     if "db" not in g:
         g.db = _new_connection()
